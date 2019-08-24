@@ -1,7 +1,11 @@
 package com.example.coolweather;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -42,6 +46,12 @@ private TextView titleCity;
     private ImageView bingPicImg;
     private LinearLayout forecastLayout;
     private SharedPreferences sharedPreferences;
+
+    public SwipeRefreshLayout swipeRefresh;
+    private String mWeatherId;
+
+    public DrawerLayout mDrawerLayout;
+    private ImageView ivNav;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,13 +74,27 @@ private TextView titleCity;
         if (weatherString!=null){
             //有缓存直接解析天气数据
             Weather weather= Utility.handleWeatherResponse(weatherString);
+            mWeatherId=weather.basic.weatherId;
             showWeatherInfo(weather);
         }else {
             //无缓存时去服务器查询天气
-            String weatherId=getIntent().getStringExtra("weather_id");
+            mWeatherId=getIntent().getStringExtra("weather_id");
+            //String weatherId=getIntent().getStringExtra("weather_id");
             weatherLayout.setVisibility(View.INVISIBLE);
-            requstWeather(weatherId);
+            requstWeather(mWeatherId);
         }
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requstWeather(mWeatherId);
+            }
+        });
+        ivNav.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mDrawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
     }
 
     /**
@@ -104,12 +128,17 @@ private TextView titleCity;
      * 根据Id请求城市天气信息
      * @param weatherId
      */
-    private void requstWeather(String weatherId) {
+    public void requstWeather(String weatherId) {
         String url="http://guolin.tech/api/weather?cityid="+weatherId+"&key=bc0418b57b2d4918819d3974ac1285d9";
         HttpUtils.SendOkhttpRequst(url, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-
+runOnUiThread(new Runnable() {
+    @Override
+    public void run() {
+        swipeRefresh.setRefreshing(false);
+    }
+});
             }
 
             @Override
@@ -123,10 +152,12 @@ private TextView titleCity;
                 SharedPreferences.Editor editor= PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
                 editor.putString("weather",responseText);
                 editor.apply();
+                mWeatherId=weather.basic.weatherId;
                 showWeatherInfo(weather);
             }else {
                 Toast.makeText(WeatherActivity.this,"获取天气失败",Toast.LENGTH_SHORT).show();
             }
+            swipeRefresh.setRefreshing(false);
                 }
             });
             }
@@ -175,6 +206,7 @@ private TextView titleCity;
         weatherLayout.setVisibility(View.VISIBLE);
     }
 
+    @SuppressLint("ResourceAsColor")
     private void initView() {
         weatherLayout=findViewById(R.id.weather_scroll_view);
         titleCity=findViewById(R.id.title_city);
@@ -189,5 +221,11 @@ private TextView titleCity;
         forecastLayout=findViewById(R.id.forecast_layout);
         sharedPreferences= PreferenceManager.getDefaultSharedPreferences(this);
         bingPicImg=findViewById(R.id.bing_pic_img);
+        swipeRefresh=findViewById(R.id.swipe_refresh);
+        swipeRefresh.setColorSchemeColors(R.color.colorPrimary);
+
+        mDrawerLayout=findViewById(R.id.drawer_layout);
+        ivNav=findViewById(R.id.nav_image_view);
+
     }
 }

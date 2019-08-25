@@ -6,6 +6,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.example.coolweather.gson.Forecast;
 import com.example.coolweather.gson.Weather;
+import com.example.coolweather.service.AutoUpdateService;
 import com.example.coolweather.util.HttpUtils;
 import com.example.coolweather.util.Utility;
 
@@ -111,15 +113,15 @@ private TextView titleCity;
             @Override
             public void onResponse(Call call, Response response) throws IOException {
             final String bingPic=response.body().string();
- SharedPreferences.Editor editor=PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
- editor.putString("bing_pic",bingPic);
- editor.apply();
- runOnUiThread(new Runnable() {
-     @Override
-     public void run() {
-         Glide.with(WeatherActivity.this).load(url).into(bingPicImg);
-     }
- });
+             SharedPreferences.Editor editor=PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
+             editor.putString("bing_pic",bingPic);
+             editor.apply();
+             runOnUiThread(new Runnable() {
+                 @Override
+                 public void run() {
+                     Glide.with(WeatherActivity.this).load(url).into(bingPicImg);
+                 }
+             });
             }
         });
     }
@@ -129,11 +131,11 @@ private TextView titleCity;
      * @param weatherId
      */
     public void requstWeather(String weatherId) {
-        String url="http://guolin.tech/api/weather?cityid="+weatherId+"&key=bc0418b57b2d4918819d3974ac1285d9";
-        HttpUtils.SendOkhttpRequst(url, new Callback() {
+            String url="http://guolin.tech/api/weather?cityid="+weatherId+"&key=bc0418b57b2d4918819d3974ac1285d9";
+            HttpUtils.SendOkhttpRequst(url, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-runOnUiThread(new Runnable() {
+            runOnUiThread(new Runnable() {
     @Override
     public void run() {
         swipeRefresh.setRefreshing(false);
@@ -204,6 +206,8 @@ runOnUiThread(new Runnable() {
         carWashText.setText(carWash);
         sportText.setText(sport);
         weatherLayout.setVisibility(View.VISIBLE);
+        Intent intent=new Intent(this, AutoUpdateService.class);
+        startService(intent);
     }
 
     @SuppressLint("ResourceAsColor")
